@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>TI-84 Plus CE Online</title>
+    <meta name="description" content="This is a standalone version of the official TI-84 Plus CE HTML5 emulator from Texas Instruments.">
+    <meta name="theme-color" content="#ffffff">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="calc.png"/>
+    <link rel="stylesheet" type="text/css" href="https://mn.testnav.com/client/public/stylesheets/tn.css"/>
+
+    <style>
+      html {
+        overflow-x: hidden;
+      }
+      body {
+        padding: 0px !important;
+        display: flex !important;
+        flex-direction: column;
+        margin: 0;
+        background: #ffffff;
+        overflow-x: hidden;
+      }
+      .calculatorDiv {
+        outline: none !important;
+        margin-left: auto;
+        margin-right: auto;
+        transform-origin: top center;
+        transition: transform 0.3s ease;
+      }
+      #main_div {
+        padding: 4px;
+        max-width: 300px;
+        margin-left: auto;
+        margin-right: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      #zoom_controls {
+        display: flex !important;
+        justify-content: center;
+        gap: 10px;
+        padding: 10px;
+        margin: 10px auto;
+        z-index: 1000;
+        position: relative;
+      }
+      #zoom_controls button {
+        padding: 8px 16px;
+        font-size: 14px;
+        cursor: pointer;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        background-color: #f0f0f0;
+        transition: background-color 0.2s;
+      }
+      #zoom_controls button:hover {
+        background-color: #e0e0e0;
+      }
+      #zoom_controls button:active {
+        background-color: #d0d0d0;
+      }
+      #zoom_level {
+        display: flex;
+        align-items: center;
+        font-size: 14px;
+        font-weight: bold;
+
+      }
+      @media (max-width: 768px) {
+        .top-header {
+          padding: 15px 20px;
+        }
+        .site-name {
+          font-size: 1.1em;
+        }
+        footer {
+          padding: 20px;
+        }
+      }
+    </style>
+
+    <script src="https://mn.testnav.com/client/texasinstruments/js/ELG-min.js"></script>
+    <!-- these tags would contain inlined data files in the html bundle-->
+    <script id="h84statej" type="application/json" data-url="https://mn.testnav.com/client/texasinstruments/bin/No_AppsCE.h84statej"></script>
+    <script id="ti84faceplate" type="application/json" data-url="https://mn.testnav.com/client/texasinstruments/images/TI84CE_touch.svg"></script>
+  </head>
+  <body>
+    <div id="zoom_controls">
+      <button onclick="zoomOut()">-</button>
+      <span id="zoom_level">100%</span>
+      <button onclick="zoomIn()">+</button>
+    </div>
+    <div id="calculatorDiv"></div>
+    <div id="main_div">
+    </div>
+
+    <script>
+      const from_id = (id) => document.getElementById(id);
+      const h84statej = from_id("h84statej");
+      const ti84faceplate = from_id("ti84faceplate");
+      const calc_div = from_id("calculatorDiv");
+      const main_div = from_id("main_div");
+      const zoom_level_display = from_id("zoom_level");
+
+      // 缩放控制
+      const ZOOM_STORAGE_KEY = 'ti84_zoom_level';
+      const zoomStep = 0.1;
+      const minZoom = 0.5;
+      const maxZoom = 2.0;
+      
+      // 从本地缓存读取上次的缩放比例，如果没有则使用默认值1.0
+      let currentZoom = parseFloat(localStorage.getItem(ZOOM_STORAGE_KEY)) || 1.0;
+      // 确保读取的值在有效范围内
+      currentZoom = Math.max(minZoom, Math.min(maxZoom, currentZoom));
+
+      function updateZoom() {
+        calc_div.style.transform = `scale(${currentZoom})`;
+        zoom_level_display.textContent = `${Math.round(currentZoom * 100)}%`;
+        
+        // 动态调整底部间距，防止放大后遮挡footer
+        // 计算额外需要的空间：原始高度 * (缩放比例 - 1)
+        const extraSpace = calc_div.offsetHeight * (currentZoom - 1);
+        calc_div.style.marginBottom = `${extraSpace}px`;
+        
+        // 保存当前缩放比例到本地缓存
+        localStorage.setItem(ZOOM_STORAGE_KEY, currentZoom.toString());
+        
+        // 通知父页面更新iframe高度
+        if (window.parent !== window) {
+          const totalHeight = calc_div.offsetHeight * currentZoom + 150; // 150是zoom controls和其他边距
+          window.parent.postMessage({
+            type: 'updateHeight',
+            height: totalHeight
+          }, '*');
+        }
+      }
+
+      function zoomIn() {
+        if (currentZoom < maxZoom) {
+          currentZoom = Math.min(currentZoom + zoomStep, maxZoom);
+          updateZoom();
+        }
+      }
+
+      function zoomOut() {
+        if (currentZoom > minZoom) {
+          currentZoom = Math.max(currentZoom - zoomStep, minZoom);
+          updateZoom();
+        }
+      }
+
+      function resetZoom() {
+        currentZoom = 1.0;
+        updateZoom();
+      }
+
+      //proxy the xmlhttprequest open to remove the hash from the url
+      XMLHttpRequest.prototype.open = new Proxy(XMLHttpRequest.prototype.open, {
+        apply: function (target, thisArg, args) {
+          if (typeof args[1] === "string") {
+            args[1] = args[1].replace(/#.*$/, "");
+          }
+          Reflect.apply(target, thisArg, args);
+        },
+      })
+
+      function create_blob(string) {
+        if (!string) return null;
+        let blob = new Blob([JSON.parse(string)]);
+        return URL.createObjectURL(blob);
+      }
+
+      function open_popup() {
+        let width = window.getComputedStyle(calc_div)["width"].replace("px", "");
+        let height = window.getComputedStyle(calc_div)["height"].replace("px", "");
+        let new_url = new URL(location.href);
+        new_url.hash = "popup";
+        window.open(new_url.href, null, `height=${height}, width=${width}`);
+      }
+
+      function main() {
+        if (location.hash === "#popup" || location.protocol == "file:"){
+          main_div.style.display = "none";
+          from_id("zoom_controls").style.display = "none";
+          const topHeader = document.querySelector(".top-header");
+          if (topHeader) topHeader.style.display = "none";
+          const footer = document.querySelector("footer");
+          if (footer) footer.style.display = "none";
+        }
+
+        let default_rom = h84statej.getAttribute("data-url");
+        let default_faceplate = ti84faceplate.getAttribute("data-url");
+
+        let rom_url = create_blob(h84statej.innerHTML) || default_rom;
+        let faceplate_url = create_blob(ti84faceplate.innerHTML) || default_faceplate;
+        
+        rom_url += "#.h84statej";
+        faceplate_url += "#.svg";
+        let ti84 = new TI84PCE({ROMLocation: rom_url, FaceplateLocation: faceplate_url});
+        
+        // 应用保存的缩放比例（使用延迟确保计算器已加载）
+        setTimeout(() => {
+          updateZoom();
+        }, 100);
+        
+        // 延迟通知父页面初始高度
+        setTimeout(() => {
+          updateZoom();
+        }, 500);
+      }
+
+      main();
+    </script>
+  </body>
+</html>
