@@ -50,6 +50,41 @@
             color: #666;
         }
         
+        .calculator-iframe-container {
+            width: 100%;
+            background: #ffffff;
+            padding: 40px 20px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .calculator-iframe-wrapper {
+            max-width: 900px;
+            margin: 0 auto;
+            text-align: center;
+        }
+        
+        .calculator-iframe-wrapper h2 {
+            font-size: 1.5em;
+            margin-bottom: 20px;
+            color: #000;
+            font-weight: 600;
+        }
+        
+        .calculator-iframe {
+            width: 100%;
+            max-width: 600px;
+            min-height: 700px;
+            height: 800px;
+            border: none;
+            background: white;
+            overflow: hidden;
+            transition: height 0.3s ease;
+        }
+        
+        .open-new-window {
+            display: none;
+        }
+        
         .cta-button {
             display: inline-block;
             margin-top: 30px;
@@ -223,23 +258,52 @@
                 font-size: 1.5em;
             }
         }
+        
+        @media (max-width: 768px) {
+            .calculator-iframe {
+                height: 700px;
+            }
+        }
     </style>
 </head>
 <body>
     <div class="top-header">
         <a href="https://ti84calculator.io" class="site-name" style="text-decoration: none;">TI 84 Calculator</a>
     </div>
-    <div class="container">
-        <header>
-            <h1>Free TI 84 Calculator Online</h1>
-            <p>Free web-based TI-84 Plus CE calculator emulator - No download required, accessible anywhere!</p>
-            <a href="https://ti84calculator.io/ti84calc" class="cta-button">Launch Calculator →</a>
-        </header>
+    
+    <div class="calculator-iframe-container">
+        <div class="calculator-iframe-wrapper">
+            <h1>Free TI-84 Calculator Online</h1>
+            <iframe id="calculatorFrame" src="ti84calc.html" class="calculator-iframe" frameborder="0" scrolling="no" allowfullscreen></iframe>
+            <a href="ti84calc.html" target="_blank" class="open-new-window">Open in New Window →</a>
+        </div>
+    </div>
+    
+    <script>
+        // 
+        window.addEventListener('message', function(event) {
+            if (event.data.type === 'updateHeight') {
+                const iframe = document.getElementById('calculatorFrame');
+                if (iframe) {
+                    iframe.style.height = event.data.height + 'px';
+                    iframe.style.transition = 'height 0.3s ease';
+                }
+            }
+        });
         
+        // 
+        document.getElementById('calculatorFrame').addEventListener('load', function() {
+            setTimeout(function() {
+                // 
+            }, 600);
+        });
+    </script>
+    
+    <div class="container">  
         <div class="content">
             <div class="section">
                 <h2>About TI 84 Calculator Online</h2>
-                <p>Welcome to the online version of the Texas Instruments TI-84 Plus CE graphing calculator. This web-based emulator provides all the functionality of a physical TI-84 Plus CE calculator right in your browser - completely free and accessible from any device.</p>
+                <p>Welcome to the online version of the Texas Instruments TI-84 Plus CE graphing calculator emulator. This web-based emulator provides all the functionality of a physical TI-84 Plus CE calculator right in your browser, no download required, completely free and accessible from any device.</p>
                 <p>Perfect for students, teachers, and professionals who need a reliable graphing calculator for mathematics, science, engineering, and statistics courses.</p>
             </div>
             
@@ -281,10 +345,8 @@
                 <h2>How to Use</h2>
                 <div class="usage-steps">
                     <ol>
-                        <li><strong>Click the button above</strong> or <a href="https://ti84calculator.io/ti84calc">this link</a> to launch the calculator</li>
                         <li><strong>Use your mouse or touchscreen</strong> to click the calculator buttons</li>
                         <li><strong>Adjust the size</strong> using the zoom controls (+ and -) at the top</li>
-                        <li><strong>Open in a new window</strong> for a distraction-free experience</li>
                         <li><strong>Start calculating!</strong> All features work exactly like a physical TI-84 Plus CE</li>
                     </ol>
                 </div>
@@ -330,8 +392,8 @@
             
             <div class="section" style="text-align: center; margin-top: 50px;">
                 <h2>Ready to Get Started?</h2>
-                <p>Launch the calculator now and start solving problems!</p>
-                <a href="https://ti84calculator.io/ti84calc" class="cta-button">Open TI 84 Calculator</a>
+                <p>Scroll back to the top to use the calculator!</p>
+                <a href="#" class="cta-button" onclick="event.preventDefault(); window.scrollTo({top: 0, behavior: 'smooth'});">Back to Calculator ↑</a>
             </div>
         </div>
         
@@ -339,6 +401,7 @@
             <p><strong>Disclaimer:</strong> This is a standalone version of the official TI-84 Plus CE HTML5 emulator from Texas Instruments.</p>
             <p>The emulator files are downloaded from <a href="https://mn.testnav.com/client/index.html" target="_blank">TestNav</a>, where you can also use it for free.</p>
             <p style="margin-top: 15px;">TI-84 Plus CE is a trademark of Texas Instruments. This website is not affiliated with or endorsed by Texas Instruments.</p>
+            <p style="margin-top: 15px;"><strong>Open Source:</strong> This project is completely open source and available on <a href="https://github.com/bifdu9898/TI84Calculator" target="_blank">GitHub</a>. Feel free to contribute, report issues, or fork the project!</p>
             <p style="margin-top: 15px;">© 2025 TI 84 Calculator. All rights reserved.</p>
         </footer>
     </div>
